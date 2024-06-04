@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teleprompter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: black;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        #teleprompter {
+            width: 80%;
+            height: 60%;
+            overflow: hidden;
+            position: relative;
+            border: 2px solid white;
+            cursor: grab;
+        }
+        #text {
+            position: absolute;
+            top: 100%;
+            width: 100%;
+            text-align: center;
+            font-size: 3em;
+        }
+        .controls {
+            margin: 10px;
+            width: 80%;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+        }
+        input[type="range"] {
+            width: 80%;
+        }
+        .control-buttons {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <textarea id="inputText" placeholder="Enter your text here..."></textarea><br>
+        <label for="fontSize">Font Size:</label>
+        <input type="number" id="fontSize" value="3" min="1" max="10" step="0.1">em<br>
+        <label for="speed">Scroll Speed (px/sec):</label>
+        <input type="range" id="speed" value="10" min="1" max="120" step="1">
+        <span id="speedValue">10</span> px/sec<br>
+        <div class="control-buttons">
+            <button onclick="startTeleprompter()">Start</button>
+            <button onclick="pauseTeleprompter()">Pause</button>
+            <button onclick="resetTeleprompter()">Reset</button>
+        </div>
+    </div>
+    <div id="teleprompter">
+        <div id="text"></div>
+    </div>
+    <script>
+        const textElement = document.getElementById('text');
+        const inputTextElement = document.getElementById('inputText');
+        const fontSizeElement = document.getElementById('fontSize');
+        const speedElement = document.getElementById('speed');
+        const speedValueElement = document.getElementById('speedValue');
+
+        let speed = parseFloat(speedElement.value);
+        const fps = 60; // Frames por segundo
+        let scrollAnimationFrame;
+        let isPaused = false;
+        let startPosY = 0;
+        let isDragging = false;
+
+        function startTeleprompter() {
+            textElement.innerHTML = inputTextElement.value.replace(/\n/g, '<br>');
+            textElement.style.fontSize = `${fontSizeElement.value}em`;
+            textElement.style.top = '100%';
+            speed = parseFloat(speedElement.value);
+            speedValueElement.textContent = speed;
+            isPaused = false;
+            scrollText();
+        }
+
+        function scrollText() {
+            if (!isPaused) {
+                const pixelsPerFrame = speed / fps;
+                textElement.style.top = `${parseFloat(textElement.style.top) - pixelsPerFrame}px`;
+                if (parseFloat(textElement.style.top) + textElement.clientHeight < 0) {
+                    cancelAnimationFrame(scrollAnimationFrame);
+                    return;
+                }
+            }
+            scrollAnimationFrame = requestAnimationFrame(scrollText);
+        }
+
+        function pauseTeleprompter() {
+            isPaused = !isPaused;
+            if (!isPaused) {
+                scrollText();
+            }
+        }
+
+        function resetTeleprompter() {
+            cancelAnimationFrame(scrollAnimationFrame);
+            textElement.style.top = '100%';
+        }
+
+        speedElement.addEventListener('input', () => {
+            speed = parseFloat(speedElement.value);
+            speedValueElement.textContent = speed;
+        });
+
+        fontSizeElement.addEventListener('input', () => {
+            textElement.style.fontSize = `${fontSizeElement.value}em`;
+        });
+
+        // Eventos para permitir el arrastre manual del texto
+        textElement.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startPosY = e.clientY - parseFloat(textElement.style.top);
+            textElement.style.cursor = 'grabbing';
+        });
+
+        textElement.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                textElement.style.top = `${e.clientY - startPosY}px`;
+            }
+        });
+
+        textElement.addEventListener('mouseup', () => {
+            isDragging = false;
+            textElement.style.cursor = 'grab';
+        });
+
+        textElement.addEventListener('mouseleave', () => {
+            if (isDragging) {
+                isDragging = false;
+                textElement.style.cursor = 'grab';
+            }
+        });
+    </script>
+</body>
+</html>
